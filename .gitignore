@@ -1,7 +1,6 @@
 .DS_Store
 .idea/
 gradleBuild/
-assets/
 
 # Built application files
 *.apk
