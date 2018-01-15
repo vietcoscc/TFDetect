@@ -184,8 +184,15 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                 int y = (int) location.top;
                                 int width = (int) (location.right - location.left);
                                 int height = (int) (location.bottom - location.top);
-                                Bitmap cutBitmap = cutBitmap(rgbFrameBitmap, x, y, width, height);
-                                Toast.makeText(DetectorActivity.this, processImage(cutBitmap), Toast.LENGTH_SHORT).show();
+                                final Bitmap cutBitmap = cutBitmap(rgbFrameBitmap, x, y, width, height);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ivImage.setImageBitmap(cutBitmap);
+                                        Toast.makeText(DetectorActivity.this, processImage(cutBitmap), Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+
                             }
                         }
 

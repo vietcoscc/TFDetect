@@ -40,6 +40,7 @@ import android.os.Trace;
 import android.util.Size;
 import android.view.KeyEvent;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
@@ -79,6 +80,7 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     //Tesseract
     protected TessBaseAPI mTess;
     protected String datapath = "";
+    protected ImageView ivImage;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -107,7 +109,7 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
         String lang = "eng";
         mTess = new TessBaseAPI();
         mTess.init(datapath, lang);
-
+        ivImage = findViewById(R.id.ivImage);
     }
 
     private void copyFiles() {
