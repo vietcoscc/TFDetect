@@ -82,6 +82,8 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     protected String datapath = "";
     protected ImageView ivImage;
 
+    private String ANDROID_DATA_DIR;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         LOGGER.d("onCreate " + this);
@@ -94,6 +96,12 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
             requestPermission();
         }
         initTesseract();
+        initOpenAlpr();
+    }
+
+    private void initOpenAlpr() {
+        ANDROID_DATA_DIR = getApplicationInfo().dataDir;
+        final String openAlprConfFile = ANDROID_DATA_DIR + File.separatorChar + "runtime_data" + File.separatorChar + "openalpr.conf";
     }
 
     protected String processImage(Bitmap image) {
@@ -242,11 +250,6 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
         Trace.endSection();
     }
 
-    @Override
-    public synchronized void onStart() {
-        LOGGER.d("onStart " + this);
-        super.onStart();
-    }
 
     @Override
     public synchronized void onResume() {
@@ -277,6 +280,12 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
         }
 
         super.onPause();
+    }
+
+    @Override
+    public synchronized void onStart() {
+        LOGGER.d("onStart " + this);
+        super.onStart();
     }
 
     @Override

@@ -18,6 +18,8 @@ package org.tensorflow.demo;
 
 import android.app.Fragment;
 import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
+import android.hardware.Camera.CameraInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -28,15 +30,11 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 
-import java.io.IOException;
-
-import android.hardware.Camera;
-import android.hardware.Camera.CameraInfo;
-
 import org.tensorflow.demo.env.Logger;
 
+import java.io.IOException;
+
 // Explicit import needed for internal Google builds.
-import org.tensorflow.demo.R;
 
 public class LegacyCameraConnectionFragment extends Fragment {
 

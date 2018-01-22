@@ -180,6 +180,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                 cropToFrameTransform.mapRect(location);
                                 result.setLocation(location);
                                 mappedRecognitions.add(result);
+
                                 int x = (int) location.left;
                                 int y = (int) location.top;
                                 int width = (int) (location.right - location.left);

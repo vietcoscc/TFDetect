@@ -17,4 +17,7 @@
     <string name="description_info">Info</string>
     <string name="request_permission">This sample needs camera permission.</string>
     <string name="camera_error">This device doesn\'t support Camera2 API.</string>
+    <string name="btn_tensorflow">Tensorflow</string>
+    <string name="btn_open_alpr">Open ALPR</string>
+    <string name="main_activity">Tensorflow object detection</string>
 </resources>

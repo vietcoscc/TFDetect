@@ -4,6 +4,8 @@ getProject().setBuildDir('gradleBuild')
 buildscript {
     repositories {
         jcenter()
+        maven { url "https://jitpack.io" }
+        google()
     }
 
     dependencies {
@@ -15,10 +17,12 @@ buildscript {
 allprojects {
     repositories {
         jcenter()
+        maven { url "https://jitpack.io" }
+        google()
     }
 }
 
-def cpuType = 'armeabi-v7a'
+//def cpuType = 'armeabi-v7a'
 
 project.ext.ASSET_DIR = projectDir.toString() + '/assets'
 
@@ -32,9 +36,9 @@ android {
         applicationId = 'org.tensorflow.demo'
         minSdkVersion 21
         targetSdkVersion 23
-        ndk {
-            abiFilters "${cpuType}"
-        }
+//        ndk {
+//            abiFilters "${cpuType}"
+//        }
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_TOOLCHAIN=gcc', '-DANDROID_STL=gnustl_static'
@@ -65,14 +69,25 @@ android {
             res.srcDirs = ['res']
             assets.srcDirs = [project.ext.ASSET_DIR]
             jniLibs.srcDirs = ['libs']
+            jni.srcDirs = ['src/main/jni', 'src/main/jniLibs/']
         }
 
         debug.setRoot('build-types/debug')
         release.setRoot('build-types/release')
     }
+    packagingOptions {
+        pickFirst 'lib/armeabi-v7a/libtess.so'
+        pickFirst 'lib/x86/libtess.so'
+        pickFirst 'lib/armeabi-v7a/liblept.so'
+        pickFirst 'lib/x86/liblept.so'
+    }
 }
 
 dependencies {
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.rmtheis:tess-two:8.0.0'
     compile 'org.tensorflow:tensorflow-android:+'
+    compile 'com.github.SandroMachado:openalpr-android:1.1.2'
+
 }
