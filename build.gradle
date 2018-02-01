@@ -36,9 +36,9 @@ android {
         applicationId = 'org.tensorflow.demo'
         minSdkVersion 21
         targetSdkVersion 23
-//        ndk {
-//            abiFilters "${cpuType}"
-//        }
+        ndk {
+            abiFilters "armeabi-v7a", "x86", "armeabi", "mips"
+        }
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_TOOLCHAIN=gcc', '-DANDROID_STL=gnustl_static'
@@ -80,14 +80,22 @@ android {
         pickFirst 'lib/x86/libtess.so'
         pickFirst 'lib/armeabi-v7a/liblept.so'
         pickFirst 'lib/x86/liblept.so'
+        pickFirst 'lib/armeabi-v7a/libopenalpr-native.so'
+        pickFirst 'lib/x86/libopenalpr-native.so'
+        pickFirst 'lib/armeabi-v7a/libopencv_java.so'
+        pickFirst 'lib/x86/lib/libopencv_java.so'
     }
 }
 
 dependencies {
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
-    compile 'com.rmtheis:tess-two:8.0.0'
     compile 'org.tensorflow:tensorflow-android:+'
     compile 'com.github.SandroMachado:openalpr-android:1.1.2'
-
+    compile 'com.jakewharton:butterknife:8.8.1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+    compile 'com.squareup.retrofit2:retrofit:2.3.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.3.0'
+    compile 'com.google.code.gson:gson:2.8.2'
+    implementation 'com.android.support:design:27.0.2'
 }

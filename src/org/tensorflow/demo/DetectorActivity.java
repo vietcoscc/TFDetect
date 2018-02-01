@@ -36,10 +36,14 @@ import android.view.Display;
 import android.widget.Toast;
 
 import org.tensorflow.demo.OverlayView.DrawCallback;
+import org.tensorflow.demo.api.ApiClient;
+import org.tensorflow.demo.api.TensorflowApi;
 import org.tensorflow.demo.env.BorderedText;
+import org.tensorflow.demo.env.DetectedObject;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -48,6 +52,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class DetectorActivity extends CameraActivity implements OnImageAvailableListener {
     private static final Logger LOGGER = new Logger();
 
@@ -55,7 +66,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private static final String TF_OD_API_MODEL_FILE =
             "file:///android_asset/ssd_mobilenet_v1_android_export.pb";
     private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/coco_labels_list.txt";
-    private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.9f;
+    private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.1f;
     private static final boolean MAINTAIN_ASPECT = false;
     private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
     private static final boolean SAVE_PREVIEW_BITMAP = false;
@@ -148,63 +159,93 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     }
 
     protected void processImageRGBbytes(int[] rgbBytes) {
+        tensorflowProcess(rgbBytes);
+    }
+
+    private void tensorflowProcess(int rgbBytes[]) {
         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+        runInServer();
+//        runInBg();
+    }
 
-        // For examining the actual TF input.
-        if (SAVE_PREVIEW_BITMAP) {
-            ImageUtils.saveBitmap(croppedBitmap);
-        }
-
-        runInBackground(
-                new Runnable() {
+    private void runInServer() {
+        System.out.println("runInServer");
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+        RequestBody requestBody = RequestBody.create(MediaType.parse("image/jpeg"), outputStream.toByteArray());
+        final MultipartBody.Part part = MultipartBody.Part.createFormData("image", "name.jpg", requestBody);
+        final long start = SystemClock.uptimeMillis();
+        ApiClient.getInstance()
+                .create(TensorflowApi.class)
+                .getRecognition(part)
+                .enqueue(new Callback<List<Classifier.Recognition>>() {
                     @Override
-                    public void run() {
-                        final long startTime = SystemClock.uptimeMillis();
-                        final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
-                        lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-                        LOGGER.i("Detect: %s", results);
-                        cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
-                        final Canvas canvas = new Canvas(cropCopyBitmap);
-                        final Paint paint = new Paint();
-                        paint.setColor(Color.RED);
-                        paint.setStyle(Style.STROKE);
-                        paint.setStrokeWidth(2.0f);
-
-                        mappedRecognitions.clear();
-                        for (final Classifier.Recognition result : results) {
-                            final RectF location = result.getLocation();
-                            if (location != null && result.getConfidence() >= MINIMUM_CONFIDENCE_TF_OD_API) {
-                                canvas.drawRect(location, paint);
-                                cropToFrameTransform.mapRect(location);
-                                result.setLocation(location);
-                                mappedRecognitions.add(result);
-
-                                int x = (int) location.left;
-                                int y = (int) location.top;
-                                int width = (int) (location.right - location.left);
-                                int height = (int) (location.bottom - location.top);
-                                final Bitmap cutBitmap = cutBitmap(rgbFrameBitmap, x, y, width, height);
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ivImage.setImageBitmap(cutBitmap);
-                                        Toast.makeText(DetectorActivity.this, processImage(cutBitmap), Toast.LENGTH_SHORT).show();
+                    public void onResponse(Call<List<Classifier.Recognition>> call, final Response<List<Classifier.Recognition>> response) {
+                        runInBackground(new Runnable() {
+                            @Override
+                            public void run() {
+                                long end = SystemClock.uptimeMillis() - start;
+                                System.out.println(end + "");
+                                System.out.println(response.message() + "");
+                                List<Classifier.Recognition> results = response.body();
+                                if (results != null && !results.isEmpty()) {
+                                    LOGGER.i("Detect: %s", results);
+                                    cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+                                    final Canvas canvas = new Canvas(cropCopyBitmap);
+                                    final Paint paint = new Paint();
+                                    paint.setColor(Color.RED);
+                                    paint.setStyle(Style.STROKE);
+                                    paint.setStrokeWidth(2.0f);
+                                    mappedRecognitions.clear();
+                                    for (final Classifier.Recognition result : results) {
+                                        final RectF location = result.getLocation();
+                                        if (location != null && result.getConfidence() >= MINIMUM_CONFIDENCE_TF_OD_API) {
+                                            canvas.drawRect(location, paint);
+                                            cropToFrameTransform.mapRect(location);
+                                            result.setLocation(location);
+                                            mappedRecognitions.add(result);
+                                            int x = (int) location.left;
+                                            int y = (int) location.top;
+                                            int width = (int) (location.right - location.left);
+                                            int height = (int) (location.bottom - location.top);
+                                            final Bitmap cutBitmap = cutBitmap(rgbFrameBitmap, x, y, width, height);
+                                            final Bitmap rotatedBitmap = RotateBitmap(cutBitmap, 90);
+                                            runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    if(btnSwitch.isChecked()) {
+                                                        adapter.addItem(new DetectedObject(rotatedBitmap, result));
+                                                    }
+                                                }
+                                            });
+                                        }
                                     }
-                                });
-
+                                    requestRender();
+                                    detectionOverlay.postInvalidate();
+                                    computing = false;
+                                    if (postInferenceCallback != null) {
+                                        postInferenceCallback.run();
+                                    }
+                                }
                             }
-                        }
+                        });
 
-                        requestRender();
-                        detectionOverlay.postInvalidate();
-                        computing = false;
-                        if (postInferenceCallback != null) {
-                            postInferenceCallback.run();
-                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<List<Classifier.Recognition>> call, Throwable t) {
+                        System.out.println("onFailure");
+                        t.printStackTrace();
                     }
                 });
+    }
+
+    public static Bitmap RotateBitmap(Bitmap source, float angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
 
     private Bitmap cutBitmap(Bitmap originalBitmap, int x, int y, int width, int height) {

@@ -21,8 +21,6 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.content.res.AssetManager;
-import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -37,24 +35,26 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Size;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.Toast;
 
-import com.googlecode.tesseract.android.TessBaseAPI;
-
+import org.tensorflow.demo.env.DetectedObject;
+import org.tensorflow.demo.env.DetectedObjectAdapter;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import retrofit2.http.Body;
 
 // Explicit import needed for internal Google builds.
 
@@ -77,12 +77,12 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     private HandlerThread handlerThread;
     private boolean useCamera2API;
     private int[] rgbBytes = null;
-    //Tesseract
-    protected TessBaseAPI mTess;
-    protected String datapath = "";
     protected ImageView ivImage;
-
-    private String ANDROID_DATA_DIR;
+    @BindView(R.id.recyclerView)
+    protected RecyclerView recyclerView;
+    protected DetectedObjectAdapter adapter = new DetectedObjectAdapter();
+    @BindView(R.id.btnSwitch)
+    Switch btnSwitch;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -90,77 +90,11 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
         super.onCreate(null);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_camera);
+        ButterKnife.bind(this);
         if (hasPermission()) {
             setFragment();
         } else {
             requestPermission();
-        }
-        initTesseract();
-        initOpenAlpr();
-    }
-
-    private void initOpenAlpr() {
-        ANDROID_DATA_DIR = getApplicationInfo().dataDir;
-        final String openAlprConfFile = ANDROID_DATA_DIR + File.separatorChar + "runtime_data" + File.separatorChar + "openalpr.conf";
-    }
-
-    protected String processImage(Bitmap image) {
-        String OCRresult = null;
-        mTess.setImage(image);
-        OCRresult = mTess.getUTF8Text();
-        return OCRresult;
-    }
-
-    private void initTesseract() {
-        datapath = getFilesDir() + "/tesseract";
-        checkFile(new File(datapath + "/tessdata/"));
-        String lang = "eng";
-        mTess = new TessBaseAPI();
-        mTess.init(datapath, lang);
-        ivImage = findViewById(R.id.ivImage);
-    }
-
-    private void copyFiles() {
-        try {
-            //location we want the file to be at
-            String filepath = datapath + "/tessdata/eng.traineddata";
-
-            //get access to AssetManager
-            AssetManager assetManager = getAssets();
-
-            //open byte streams for reading/writing
-            InputStream instream = assetManager.open("eng.traineddata");
-            OutputStream outstream = new FileOutputStream(filepath);
-
-            //copy the file to the location specified by filepath
-            byte[] buffer = new byte[1024];
-            int read;
-            while ((read = instream.read(buffer)) != -1) {
-                outstream.write(buffer, 0, read);
-            }
-            outstream.flush();
-            outstream.close();
-            instream.close();
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void checkFile(File dir) {
-        //directory does not exist, but we can successfully create it
-        if (!dir.exists() && dir.mkdirs()) {
-            copyFiles();
-        }
-        //The directory exists, but there is no data file in it
-        if (dir.exists()) {
-            String datafilepath = datapath + "/tessdata/eng.traineddata";
-            File datafile = new File(datafilepath);
-            if (!datafile.exists()) {
-                copyFiles();
-            }
         }
     }
 
@@ -384,6 +318,10 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     }
 
     protected void setFragment() {
+        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        recyclerView.setAdapter(adapter);
+        btnSwitch.setChecked(true);
+
         String cameraId = chooseCamera();
 
         Fragment fragment;
