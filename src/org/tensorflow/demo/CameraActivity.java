@@ -21,6 +21,8 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -82,7 +84,8 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     protected RecyclerView recyclerView;
     protected DetectedObjectAdapter adapter = new DetectedObjectAdapter();
     @BindView(R.id.btnSwitch)
-    Switch btnSwitch;
+    protected Switch btnSwitch;
+    final Paint paint = new Paint();
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -318,8 +321,13 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     }
 
     protected void setFragment() {
+        paint.setColor(Color.RED);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(2.0f);
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         recyclerView.setAdapter(adapter);
+
         btnSwitch.setChecked(true);
 
         String cameraId = chooseCamera();

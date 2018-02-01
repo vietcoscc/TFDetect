@@ -61,12 +61,13 @@ public class DetectedObjectAdapter extends RecyclerView.Adapter<RecyclerView.Vie
 
         public void bindView(DetectedObject detectedObject) {
             ivImage.setImageBitmap(detectedObject.getBitmap());
-            tvInfo.setText(detectedObject.getRecognition().getTitle().trim());
+            tvInfo.setText(detectedObject.getRecognition().getTitle().trim() + " "
+                    + detectedObject.getRecognition().getConfidence());
         }
     }
 
     public void addItem(DetectedObject detectedObject) {
-        if (arrObject.size() > 6) {
+        if (arrObject.size() > 10) {
             removeItem(arrObject.size() - 1);
         }
         arrObject.add(0, detectedObject);
