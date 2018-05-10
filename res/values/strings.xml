@@ -20,4 +20,6 @@
     <string name="btn_tensorflow">Tensorflow</string>
     <string name="btn_open_alpr">Open ALPR</string>
     <string name="main_activity">Tensorflow object detection</string>
+    <string name="number_plate_detection">Number plate detection</string>
+    <string name="btn_tensorflow2">Vietnamese ALPR</string>
 </resources>

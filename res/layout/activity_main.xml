@@ -3,20 +3,30 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:background="@android:color/white"
     android:layout_height="match_parent"
+    android:background="@android:color/white"
     android:orientation="vertical"
+    android:weightSum="10"
     tools:context="org.tensorflow.demo.MainActivity">
 
-    <TextView
+    <ImageView
         android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:src="@drawable/tf" />
+
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/component_background"
-        android:gravity="center"
-        android:padding="@dimen/horizontal_page_margin"
-        android:text="@string/main_activity"
-        android:textColor="@android:color/white"
-        android:textSize="30sp" />
+        android:layout_gravity="center"
+        android:shadowColor="@android:color/black"
+        android:shadowDx="5"
+        android:shadowDy="5"
+        android:shadowRadius="10"
+        android:text="@string/number_plate_detection"
+        android:textColor="@android:color/holo_orange_dark"
+        android:textSize="30sp"
+        android:textStyle="bold" />
 
     <Button
         android:id="@+id/btnTensorflow"
@@ -27,4 +37,12 @@
         android:text="@string/btn_tensorflow"
         android:textColor="@android:color/white" />
 
+    <Button
+        android:id="@+id/btnTensorflow2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/horizontal_page_margin"
+        android:background="@drawable/component_background"
+        android:text="@string/btn_tensorflow2"
+        android:textColor="@android:color/white" />
 </LinearLayout>

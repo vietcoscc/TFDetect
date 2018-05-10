@@ -37,7 +37,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Size;
@@ -47,7 +46,6 @@ import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.Toast;
 
-import org.tensorflow.demo.env.DetectedObject;
 import org.tensorflow.demo.env.DetectedObjectAdapter;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
@@ -56,9 +54,6 @@ import java.nio.ByteBuffer;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import retrofit2.http.Body;
-
-// Explicit import needed for internal Google builds.
 
 public abstract class CameraActivity extends Activity implements OnImageAvailableListener, Camera.
         PreviewCallback {

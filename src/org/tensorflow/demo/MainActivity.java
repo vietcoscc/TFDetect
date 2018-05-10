@@ -19,19 +19,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @BindView(R.id.btnTensorflow)
     Button btnTensorflow;
+    @BindView(R.id.btnTensorflow2)
+    Button btnTensorflow2;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         btnTensorflow.setOnClickListener(this);
+        btnTensorflow2.setOnClickListener(this);
     }
 
     @Override
     public void onClick(View v) {
-       if (v.getId() == R.id.btnTensorflow) {
+        if (v.getId() == R.id.btnTensorflow) {
             Intent intent = new Intent(this, DetectorActivity.class);
             intent.putExtra(TYPE_DETECTION, true);
+            startActivity(intent);
+        } else if (v.getId() == R.id.btnTensorflow2) {
+            Intent intent = new Intent(this, DetectorActivity.class);
+            intent.putExtra(TYPE_DETECTION, false);
             startActivity(intent);
         }
     }

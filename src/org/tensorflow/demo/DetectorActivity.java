@@ -1,18 +1,3 @@
-/*
- * Copyright 2016 The TensorFlow Authors. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 package org.tensorflow.demo;
 
@@ -27,6 +12,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.support.constraint.solver.widgets.Rectangle;
@@ -60,14 +46,18 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import static org.tensorflow.demo.MainActivity.TYPE_DETECTION;
+
 public class DetectorActivity extends CameraActivity implements OnImageAvailableListener {
     private static final Logger LOGGER = new Logger();
 
     private static final int TF_OD_API_INPUT_SIZE = 300;
     private static final String TF_OD_API_MODEL_FILE =
-            "file:///android_asset/ssd_mobilenet_v1_android_export.pb";
+            "file:///android_asset/ssd_mobile_net_foreign.pb";
+    private static final String TF_OD_API_MODEL_FILE_2 =
+            "file:///android_asset/ssd_mobilenet_vie.pb";
     private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/coco_labels_list.txt";
-    private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.1f;
+    private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.8f;
     private static final boolean MAINTAIN_ASPECT = false;
     private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
     private static final boolean SAVE_PREVIEW_BITMAP = false;
@@ -93,7 +83,19 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private OverlayView detectionOverlay;
     private List<Classifier.Recognition> mappedRecognitions =
             new LinkedList<>();
+    private String model = "";
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        boolean type = getIntent().getBooleanExtra(TYPE_DETECTION, true);
+        Toast.makeText(this, type+"", Toast.LENGTH_SHORT).show();
+        if (type) {
+            model = TF_OD_API_MODEL_FILE;
+        } else {
+            model = TF_OD_API_MODEL_FILE_2;
+        }
+    }
 
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
@@ -105,7 +107,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
         try {
             detector = TensorFlowObjectDetectionAPIModel.create(
-                    getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
+                    getAssets(), model, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
         } catch (final IOException e) {
             LOGGER.e("Exception initializing classifier!", e);
             Toast toast =
@@ -167,7 +169,44 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
-        runInServer();
+//        runInServer();
+        runInBackground(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        final long startTime = SystemClock.uptimeMillis();
+                        final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
+                        lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+                        LOGGER.i("Detect: %s", results);
+                        cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+                        final Canvas canvas = new Canvas(cropCopyBitmap);
+                        final Paint paint = new Paint();
+                        paint.setColor(Color.RED);
+                        paint.setStyle(Style.STROKE);
+                        paint.setStrokeWidth(2.0f);
+
+                        mappedRecognitions.clear();
+                        for (final Classifier.Recognition result : results) {
+                            final RectF location = result.getLocation();
+                            if (location != null && result.getConfidence() >= MINIMUM_CONFIDENCE_TF_OD_API) {
+                                canvas.drawRect(location, paint);
+                                cropToFrameTransform.mapRect(location);
+                                result.setLocation(location);
+                                mappedRecognitions.add(result);
+                                if (btnSwitch.isChecked()) {
+                                    showImage(result);
+                                }
+                            }
+                        }
+
+                        requestRender();
+                        detectionOverlay.postInvalidate();
+                        computing = false;
+                        if (postInferenceCallback != null) {
+                            postInferenceCallback.run();
+                        }
+                    }
+                });
     }
 
     private void runInServer() {
@@ -186,6 +225,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 @Override
                 public void run() {
                     System.out.println(response.message() + "");
+
                     List<Classifier.Recognition> results = response.body();
                     if (results != null && !results.isEmpty()) {
                         LOGGER.i("Detect: %s", results);
